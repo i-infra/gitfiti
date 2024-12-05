@@ -246,8 +246,6 @@ IMAGES = {
     "heart_shiny": HEART_SHINY,
 }
 
-import json
-
 
 def string_to_gitfiti(text):
     """
