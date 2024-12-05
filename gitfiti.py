@@ -40,7 +40,7 @@ TITLE = """
    ____ _(_) /_/ __(_) /_(_)
   / __ `/ / __/ /_/ / __/ /
  / /_/ / / /_/ __/ / /_/ /
- \__, /_/\__/_/ /_/\__/_/
+ \\__, /_/\\__/_/ /_/\\__/_/
 /____/
 """
 
@@ -246,6 +246,42 @@ IMAGES = {
     "heart_shiny": HEART_SHINY,
 }
 
+import json
+
+
+def string_to_gitfiti(text):
+    """
+    Convert a string to a gitfiti-compatible image by concatenating letter patterns horizontally.
+    Returns a list of lists representing the image, compatible with gitfiti's format.
+    """
+    # Load the font data
+    with open("font_gitfiti.json", "r") as f:
+        font = json.load(f)
+
+    # Initialize variables
+    height = 7  # Standard height for our font
+    result = [[] for _ in range(height)]  # Initialize empty rows
+
+    # Process each character in the input string
+    for char in text:
+        # Get the character pattern, defaulting to space if character not found
+        pattern = font.get(char, font[" "])
+
+        # For each row in the pattern
+        for row_idx in range(height):
+            # Add the pattern row to our result
+            # If the pattern has fewer than 7 rows, pad with empty space
+            if row_idx < len(pattern):
+                result[row_idx].extend(pattern[row_idx])
+            else:
+                result[row_idx].extend([0, 0, 0, 0, 0])
+
+            # Add a space between characters (1 pixel wide)
+            result[row_idx].append(0)
+
+    return result
+
+
 SHELLS = {
     "bash": "sh",
     "powershell": "ps1",
@@ -433,6 +469,27 @@ def request_user_input(prompt="> "):
     return raw_input(prompt)
 
 
+def render_image_to_terminal(image):
+    """Renders a gitfiti image to the terminal using Unicode block characters.
+    Each pixel value (0-4) is mapped to a different density block character.
+
+    Args:
+        image: A list of lists representing the image in gitfiti format
+              where each value is 0-4 indicating intensity
+    """
+    # Unicode block elements from empty to full
+    blocks = " ░▒▓█"
+
+    # Print each row
+    for row in image:
+        line = ""
+        for pixel in row:
+            # Clamp value to valid range and convert to block character
+            value = max(0, min(4, pixel))
+            line += blocks[value]
+        print(line)
+
+
 def main():
     print(TITLE)
 
@@ -470,30 +527,30 @@ def main():
             "Any other input will cause the default matching behavior"
         ).format(max_daily_commits)
     )
+
     match = request_user_input()
 
     match = m if (match == "gitfiti") else 1
-
     print("Enter file(s) to load images from (blank if not applicable)")
     img_names = request_user_input().split(" ")
 
     loaded_images = load_images(img_names)
     images = dict(IMAGES, **loaded_images)
-
-    print("Enter the image name to gitfiti")
+    print('Enter the image name to gitfiti (or "string" for input)')
     print("Images: " + ", ".join(images.keys()))
     image = request_user_input()
 
     image_name_fallback = FALLBACK_IMAGE
-
-    if not image:
+    if image == "string":
+        image = string_to_gitfiti(request_user_input("string> "))
+    elif not image:
         image = IMAGES[image_name_fallback]
     else:
         try:
             image = images[image]
         except:
             image = IMAGES[image_name_fallback]
-
+    render_image_to_terminal(image)
     start_date = get_start_date()
     fake_it_multiplier = m * match
 
@@ -520,6 +577,39 @@ def main():
             repo, git_base
         )
     )
+
+
+def string_to_gitfiti(text):
+    """
+    Convert a string to a gitfiti-compatible image by concatenating letter patterns horizontally.
+    Returns a list of lists representing the image, compatible with gitfiti's format.
+    """
+    # Load the font data
+    with open("font_gitfiti.json", "r") as f:
+        font = json.load(f)
+
+    # Initialize variables
+    height = 7  # Standard height for our font
+    result = [[] for _ in range(height)]  # Initialize empty rows
+
+    # Process each character in the input string
+    for char in text:
+        # Get the character pattern, defaulting to space if character not found
+        pattern = font.get(char, font[" "])
+
+        # For each row in the pattern
+        for row_idx in range(height):
+            # Add the pattern row to our result
+            # If the pattern has fewer than 7 rows, pad with empty space
+            if row_idx < len(pattern):
+                result[row_idx].extend(pattern[row_idx])
+            else:
+                result[row_idx].extend([0, 0, 0, 0, 0])
+
+            # Add a space between characters (1 pixel wide)
+            result[row_idx].append(0)
+
+    return result
 
 
 if __name__ == "__main__":
